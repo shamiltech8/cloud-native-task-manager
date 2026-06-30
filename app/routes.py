@@ -1,21 +1,22 @@
+from flask import render_template
 from app import app
 
 @app.route("/")
 def home():
-    return "Welcome to Cloud-Native Task Manager!"
+    return render_template("index.html")
 
 @app.route("/about")
 def about():
-    return "About Page"
+    return render_template("about.html")
 
 @app.route("/contact")
 def contact():
-    return "Contact Page"
+    return render_template("contact.html")
 
 @app.route("/dashboard")
 def dashboard():
-    return "Dashboard Page"
+    return render_template("dashboard.html")
 
 @app.route("/task/<int:id>")
 def task(id):
-    return f"Displaying Task {id}"
+    return render_template("task.html", id=id)
