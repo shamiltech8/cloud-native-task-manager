@@ -1,4 +1,4 @@
-from flask import render_template
+from flask import render_template, request
 from app import app
 
 @app.route("/")
@@ -20,3 +20,14 @@ def dashboard():
 @app.route("/task/<int:id>")
 def task(id):
     return render_template("task.html", id=id)
+
+@app.route("/add-task", methods=["GET","POST"])
+def add_task():
+
+    if request.method == "POST":
+
+       task = request.form["task"]
+
+       return f"Task Added: {task}"
+
+    return render_template("add_task.html")
