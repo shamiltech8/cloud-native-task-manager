@@ -1,43 +1,51 @@
-from flask import render_template, request, session, redirect, url_for
-from app import app
+from flask import Blueprint, render_template, request, session, redirect, url_for
 
-@app.route("/")
+main = Blueprint("main", __name__)
+
+
+@main.route("/")
 def home():
     return render_template("index.html")
 
-@app.route("/about")
+
+@main.route("/about")
 def about():
     return render_template("about.html")
 
-@app.route("/contact")
+
+@main.route("/contact")
 def contact():
     return render_template("contact.html")
 
-@app.route("/dashboard")
+
+@main.route("/dashboard")
 def dashboard():
 
     if "username" not in session:
-        return redirect(url_for("login"))
+        return redirect(url_for("main.login"))
 
     username = session["username"]
-    return render_template("dashboard.html",username=username)
+    return render_template("dashboard.html", username=username)
 
-@app.route("/task/<int:id>")
+
+@main.route("/task/<int:id>")
 def task(id):
     return render_template("task.html", id=id)
 
-@app.route("/add-task", methods=["GET","POST"])
+
+@main.route("/add-task", methods=["GET", "POST"])
 def add_task():
 
     if request.method == "POST":
 
-       task = request.form["task"]
+        task = request.form["task"]
 
-       return f"Task Added: {task}"
+        return f"Task Added: {task}"
 
     return render_template("add_task.html")
 
-@app.route("/login", methods=["GET","POST"])
+
+@main.route("/login", methods=["GET", "POST"])
 def login():
 
     if request.method == "POST":
@@ -46,13 +54,14 @@ def login():
 
         session["username"] = username
 
-        return redirect(url_for("dashboard"))
+        return redirect(url_for("main.dashboard"))
 
     return render_template("login.html")
 
-@app.route("/logout")
+
+@main.route("/logout")
 def logout():
 
     session.pop("username", None)
 
-    return redirect(url_for("home"))
+    return redirect(url_for("main.home"))

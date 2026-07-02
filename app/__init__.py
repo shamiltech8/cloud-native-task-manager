@@ -1,9 +1,21 @@
-# app/__init__.py
-
 from flask import Flask
+from flask_sqlalchemy import SQLAlchemy
 
-app = Flask(__name__)
+db = SQLAlchemy()
 
-app.secret_key = "my_user_key"
 
-from app import routes
+def create_app():
+    app = Flask(__name__)
+
+    app.config.from_object("config.Config")
+
+    db.init_app(app)
+
+    # Import models so SQLAlchemy knows about them
+    from app.models import User
+
+    # Register Blueprint
+    from app.routes import main
+    app.register_blueprint(main)
+
+    return app
