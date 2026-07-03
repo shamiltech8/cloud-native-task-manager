@@ -27,9 +27,10 @@ def dashboard():
     if "username" not in session:
         return redirect(url_for("main.login"))
 
-    username = session["username"]
-    return render_template("dashboard.html", username=username)
-
+    return render_template(
+        "dashboard.html",
+        username=session["username"]
+    )
 
 @main.route("/task/<int:id>")
 def task(id):
@@ -50,6 +51,10 @@ def add_task():
 
 @main.route("/register", methods=["GET", "POST"])
 def register():
+
+    if "username" in session:
+        return redirect(url_for("main.dashboard"))
+
 
     if request.method == "POST":
 
@@ -79,7 +84,7 @@ def register():
         db.session.commit()
 
         return redirect(url_for("main.login"))
-
+    return render_template("register.html")
 
 @main.route("/login", methods=["GET", "POST"])
 def login():
