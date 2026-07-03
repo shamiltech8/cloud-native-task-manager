@@ -80,8 +80,6 @@ def register():
 
         return redirect(url_for("main.login"))
 
-    return render_template("register.html")
-
 
 @main.route("/login", methods=["GET", "POST"])
 def login():
@@ -89,12 +87,23 @@ def login():
     if request.method == "POST":
 
         username = request.form["username"]
+        password = request.form["password"]
 
-        session["username"] = username
+        # Find the user
+        user = User.query.filter_by(username=username).first()
 
-        return redirect(url_for("main.dashboard"))
+        if user and check_password_hash(user.password, password):
+
+            session["username"] = user.username
+
+            return redirect(url_for("main.dashboard"))
+
+        return "Invalid username or password!"
 
     return render_template("login.html")
+    return render_template("register.html")
+
+
 
 
 @main.route("/logout")

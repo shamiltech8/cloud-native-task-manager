@@ -6,26 +6,23 @@
 
 <form method="POST">
 
-    <label>Username</label>
+    <label>Username</label><br>
+    <input type="text" name="username" required>
 
     <br><br>
 
-    <input
-        type="text"
-        name="username"
-        required>
+    <label>Password</label><br>
+    <input type="password" name="password" required>
 
     <br><br>
 
-    <p>
-    Don't have an account?
-    <a href="{{ url_for('main.register') }}">Register</a>
-    </p>
-
-    <button type="submit">
-        Login
-    </button>
+    <button type="submit">Login</button>
 
 </form>
+
+<p>
+    Don't have an account?
+    <a href="{{ url_for('main.register') }}">Register</a>
+</p>
 
 {% endblock %}
