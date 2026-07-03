@@ -1,7 +1,10 @@
 from flask import Blueprint, render_template, request, session, redirect, url_for
+from werkzeug.security import generate_password_hash, check_password_hash
+
+from app import db
+from app.models import User, Task
 
 main = Blueprint("main", __name__)
-
 
 @main.route("/")
 def home():
@@ -43,6 +46,41 @@ def add_task():
         return f"Task Added: {task}"
 
     return render_template("add_task.html")
+
+
+@main.route("/register", methods=["GET", "POST"])
+def register():
+
+    if request.method == "POST":
+
+        username = request.form["username"]
+        email = request.form["email"]
+        password = request.form["password"]
+
+        existing_user = User.query.filter_by(username=username).first()
+
+        if existing_user:
+            return "Username already exists!"
+
+        existing_email = User.query.filter_by(email=email).first()
+
+        if existing_email:
+            return "Email already exists!"
+
+        hashed_password = generate_password_hash(password)
+
+        user = User(
+            username=username,
+            email=email,
+            password=hashed_password
+        )
+
+        db.session.add(user)
+        db.session.commit()
+
+        return redirect(url_for("main.login"))
+
+    return render_template("register.html")
 
 
 @main.route("/login", methods=["GET", "POST"])
