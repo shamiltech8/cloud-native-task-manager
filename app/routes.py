@@ -40,14 +40,30 @@ def task(id):
 @main.route("/add-task", methods=["GET", "POST"])
 def add_task():
 
+    if "username" not in session:
+        return redirect(url_for("main.login"))
+
     if request.method == "POST":
 
-        task = request.form["task"]
+        title = request.form["title"]
+        description = request.form["description"]
 
-        return f"Task Added: {task}"
+        user = User.query.filter_by(
+            username=session["username"]
+        ).first()
+
+        task = Task(
+            title=title,
+            description=description,
+            user_id=user.id
+        )
+
+        db.session.add(task)
+        db.session.commit()
+
+        return redirect(url_for("main.dashboard"))
 
     return render_template("add_task.html")
-
 
 @main.route("/register", methods=["GET", "POST"])
 def register():
