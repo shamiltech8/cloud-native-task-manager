@@ -65,6 +65,25 @@ def add_task():
 
     return render_template("add_task.html")
 
+@main.route("/tasks")
+def view_tasks():
+
+    if "username" not in session:
+        return redirect(url_for("main.login"))
+
+    user = User.query.filter_by(
+        username=session["username"]
+    ).first()
+
+    tasks = Task.query.filter_by(
+        user_id=user.id
+    ).all()
+
+    return render_template(
+        "tasks.html",
+        tasks=tasks
+    )
+
 @main.route("/register", methods=["GET", "POST"])
 def register():
 
