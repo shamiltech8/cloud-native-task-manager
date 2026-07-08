@@ -18,6 +18,12 @@
 
 {{ task.description }}
 
+<br><br>
+
+<a href="{{ url_for('main.edit_task', task_id=task.id) }}">
+    Edit
+</a>
+
 </li>
 
 <br>

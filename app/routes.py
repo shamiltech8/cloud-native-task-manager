@@ -84,6 +84,38 @@ def view_tasks():
         tasks=tasks
     )
 
+@main.route("/edit-task/<int:task_id>", methods=["GET", "POST"])
+def edit_task(task_id):
+
+    if "username" not in session:
+        return redirect(url_for("main.login"))
+
+    user = User.query.filter_by(
+        username=session["username"]
+    ).first()
+
+    task = Task.query.filter_by(
+        id=task_id,
+        user_id=user.id
+    ).first()
+
+    if not task:
+        return "Task not found!"
+
+    if request.method == "POST":
+
+        task.title = request.form["title"]
+        task.description = request.form["description"]
+
+        db.session.commit()
+
+        return redirect(url_for("main.view_tasks"))
+
+    return render_template(
+        "edit_task.html",
+        task=task
+    )
+
 @main.route("/register", methods=["GET", "POST"])
 def register():
 
