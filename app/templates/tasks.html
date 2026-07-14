@@ -8,21 +8,28 @@
 
 <ul>
 
+
 {% for task in tasks %}
 
 <li>
 
-<b>{{ task.title }}</b>
+    <b>{{ task.title }}</b>
 
-<br>
+    <br>
 
-{{ task.description }}
+    {{ task.description }}
 
-<br><br>
+    <br><br>
 
-<a href="{{ url_for('main.edit_task', task_id=task.id) }}">
-    Edit
-</a>
+    <a href="{{ url_for('main.edit_task', task_id=task.id) }}">
+        Edit
+    </a>
+
+    |
+
+    <a href="{{ url_for('main.delete_task', task_id=task.id) }}">
+        Delete
+    </a>
 
 </li>
 

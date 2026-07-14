@@ -115,6 +115,28 @@ def edit_task(task_id):
         "edit_task.html",
         task=task
     )
+@main.route("/delete-task/<int:task_id>")
+def delete_task(task_id):
+
+    if "username" not in session:
+        return redirect(url_for("main.login"))
+
+    user = User.query.filter_by(
+        username=session["username"]
+    ).first()
+
+    task = Task.query.filter_by(
+        id=task_id,
+        user_id=user.id
+    ).first()
+
+    if not task:
+        return "Task not found!"
+
+    db.session.delete(task)
+    db.session.commit()
+
+    return redirect(url_for("main.view_tasks"))
 
 @main.route("/register", methods=["GET", "POST"])
 def register():
