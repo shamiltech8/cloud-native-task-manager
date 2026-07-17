@@ -3,13 +3,18 @@ from werkzeug.security import generate_password_hash, check_password_hash
 
 from app import db
 from app.models import User, Task
+import socket
 
 main = Blueprint("main", __name__)
 
 @main.route("/")
 def home():
-    return render_template("index.html")
+    hostname = socket.gethostname()
 
+    return render_template(
+        "index.html",
+        hostname=hostname
+    )
 
 @main.route("/about")
 def about():
