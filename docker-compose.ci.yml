@@ -1,0 +1,24 @@
+services:
+  postgres:
+    image: postgres:16
+
+    environment:
+      POSTGRES_USER: task_user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: task_manager
+
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U task_user -d task_manager"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
+
+    ports:
+      - "5433:5432"
+
+    volumes:
+      - ci-postgres-data:/var/lib/postgresql/data
+
+volumes:
+  ci-postgres-data:

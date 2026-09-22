@@ -23,23 +23,23 @@ pipeline {
             }
         }
 
-        stage('Start Database') {
+        stage('Start CI Database') {
             steps {
-                sh 'docker compose up -d postgres'
+                sh 'docker compose -f docker-compose.ci.yml -p cloud-task-manager-ci up -d'
                 sh 'sleep 10'
             }
         }
 
         stage('Test') {
             steps {
-                sh 'DATABASE_URL=postgresql://task_user:password@localhost:5432/task_manager .venv/bin/pytest'
+                sh 'DATABASE_URL=postgresql://task_user:password@localhost:5433/task_manager .venv/bin/pytest -v'
             }
         }
     }
 
     post {
         always {
-            sh 'docker compose down -v || true'
+            sh 'docker compose -f docker-compose.ci.yml -p cloud-task-manager-ci down -v || true'
         }
 
         success {
