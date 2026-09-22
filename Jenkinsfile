@@ -23,15 +23,25 @@ pipeline {
             }
         }
 
+        stage('Start Database') {
+            steps {
+                sh 'docker compose up -d postgres'
+                sh 'sleep 10'
+            }
+        }
+
         stage('Test') {
             steps {
-                sh '.venv/bin/python --version'
-                sh '.venv/bin/pytest'
+                sh 'DATABASE_URL=postgresql://task_user:password@localhost:5432/task_manager .venv/bin/pytest'
             }
         }
     }
 
     post {
+        always {
+            sh 'docker compose down -v || true'
+        }
+
         success {
             echo 'Cloud-Native Task Manager CI pipeline completed successfully!'
         }
