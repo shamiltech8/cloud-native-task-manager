@@ -35,14 +35,13 @@ pipeline {
                 sh 'DATABASE_URL=postgresql://task_user:password@localhost:5433/task_manager .venv/bin/pytest -v'
             }
         }
-    }
 
         stage('Build Docker Image') {
             steps {
                 sh 'docker build -t cloud-task-manager:${BUILD_NUMBER} .'
+            }
         }
     }
-
 
     post {
         always {
