@@ -37,6 +37,13 @@ pipeline {
         }
     }
 
+        stage('Build Docker Image') {
+            steps {
+                sh 'docker build -t cloud-task-manager:${BUILD_NUMBER} .'
+        }
+    }
+
+
     post {
         always {
             sh 'docker compose -f docker-compose.ci.yml -p cloud-task-manager-ci down -v || true'
