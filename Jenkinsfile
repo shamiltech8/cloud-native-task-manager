@@ -96,33 +96,53 @@ pipeline {
 
         stage('Deploy to Kubernetes') {
             steps {
-                sh '''
-                    export KUBECONFIG=/var/lib/jenkins/.kube/config
+                withCredentials([
+                    usernamePassword(
+                        credentialsId: 'aws-ecr',
+                        usernameVariable: 'AWS_ACCESS_KEY_ID',
+                        passwordVariable: 'AWS_SECRET_ACCESS_KEY'
+                    )
+                ]) {
 
-                    echo "Checking Kubernetes cluster..."
+                    sh '''
+                        export KUBECONFIG=/var/lib/jenkins/.kube/config
 
-                    kubectl config current-context
-                    kubectl get nodes
+                        echo "Checking Kubernetes cluster..."
 
-                    echo "Deploying image..."
+                        kubectl config current-context
+                        kubectl get nodes
 
-                    kubectl set image deployment/flask \
-                    flask=148908330969.dkr.ecr.ap-south-1.amazonaws.com/cloud-native-task-manager:${BUILD_NUMBER}
+                        echo "Refreshing ECR pull secret..."
 
-                    echo "Waiting for rollout..."
+                        kubectl create secret docker-registry ecr-secret \
+                            --docker-server=148908330969.dkr.ecr.ap-south-1.amazonaws.com \
+                            --docker-username=AWS \
+                            --docker-password="$(aws ecr get-login-password --region ap-south-1)" \
+                            --dry-run=client \
+                            -o yaml | kubectl apply -f -
 
-                    kubectl rollout status \
-                    deployment/flask \
-                    --timeout=120s
+                        echo "ECR pull secret refreshed successfully."
 
-                    echo "Deployment status:"
+                        echo "Deploying image..."
 
-                    kubectl get deployment flask
+                        kubectl set image deployment/flask \
+                            flask=148908330969.dkr.ecr.ap-south-1.amazonaws.com/cloud-native-task-manager:${BUILD_NUMBER}
 
-                    echo "Pod status:"
+                        echo "Waiting for rollout..."
 
-                    kubectl get pods -l app=flask
-                '''
+                        kubectl rollout status \
+                            deployment/flask \
+                            --timeout=120s
+
+                        echo "Deployment status:"
+
+                        kubectl get deployment flask
+
+                        echo "Pod status:"
+
+                        kubectl get pods -l app=flask
+                    '''
+                }
             }
 
             post {
