@@ -45,7 +45,7 @@ pipeline {
             }
         }
 
-        stage('Push Image to ECR') {
+        stage('Test ECR Push') {
             steps {
                 withCredentials([
                     usernamePassword(
@@ -55,32 +55,61 @@ pipeline {
                     )
                 ]) {
                     sh '''
-                        aws ecr get-login-password --region ap-south-1 | \
+                        set -e
+
+                        echo "Logging into ECR..."
+
+                        aws ecr get-login-password \
+                        --region ap-south-1 | \
                         docker login \
                         --username AWS \
                         --password-stdin \
                         148908330969.dkr.ecr.ap-south-1.amazonaws.com
 
-                        docker tag \
-                        cloud-task-manager:${BUILD_NUMBER} \
-                        148908330969.dkr.ecr.ap-south-1.amazonaws.com/cloud-native-task-manager:${BUILD_NUMBER}
+                        echo "Pushing existing image..."
 
                         docker push \
-                        148908330969.dkr.ecr.ap-south-1.amazonaws.com/cloud-native-task-manager:${BUILD_NUMBER}
+                        148908330969.dkr.ecr.ap-south-1.amazonaws.com/cloud-native-task-manager:21
                     '''
-                }
-            }
-        }
+                 }
+          }
+}
 
         stage('Deploy to Kubernetes') {
             steps {
                 sh '''
-                    export KUBECONFIG=/var/lib/jenkins/.kube/config
-
                     echo "Checking Kubernetes cluster..."
                     kubectl config current-context
                     kubectl get nodes
+stage('Test ECR Push') {
+    steps {
+        withCredentials([
+            usernamePassword(
+                credentialsId: 'aws-ecr',
+                usernameVariable: 'AWS_ACCESS_KEY_ID',
+                passwordVariable: 'AWS_SECRET_ACCESS_KEY'
+            )
+        ]) {
+            sh '''
+                set -e
 
+                echo "Logging into ECR..."
+
+                aws ecr get-login-password \
+                --region ap-south-1 | \
+                docker login \
+                --username AWS \
+                --password-stdin \
+                148908330969.dkr.ecr.ap-south-1.amazonaws.com
+
+                echo "Pushing existing image..."
+
+                docker push \
+                148908330969.dkr.ecr.ap-south-1.amazonaws.com/cloud-native-task-manager:21
+            '''
+        }
+    }
+}
                     echo "Deploying image..."
 
                     kubectl set image deployment/flask \
