@@ -45,7 +45,7 @@ pipeline {
             }
         }
 
-        stage('Push Image to ECR') {
+        stage('Push Image to ECR - Diagnostic') {
             steps {
                 withCredentials([
                     usernamePassword(
@@ -55,12 +55,42 @@ pipeline {
                     )
                 ]) {
                     sh '''
-                        aws ecr get-login-password --region ap-south-1 | \
-                        docker login --username AWS --password-stdin \
+                        echo "========================================"
+                        echo "Testing AWS credentials..."
+                        echo "========================================"
+
+                        aws sts get-caller-identity
+
+                        echo "========================================"
+                        echo "Testing ECR repository access..."
+                        echo "========================================"
+
+                        aws ecr describe-repositories \
+                        --repository-names cloud-native-task-manager \
+                        --region ap-south-1
+
+                        echo "========================================"
+                        echo "Logging into ECR..."
+                        echo "========================================"
+
+                        aws ecr get-login-password \
+                        --region ap-south-1 | \
+                        docker login \
+                        --username AWS \
+                        --password-stdin \
                         148908330969.dkr.ecr.ap-south-1.amazonaws.com
 
-                        docker tag cloud-task-manager:${BUILD_NUMBER} \
+                        echo "========================================"
+                        echo "Tagging Docker image..."
+                        echo "========================================"
+
+                        docker tag \
+                        cloud-task-manager:${BUILD_NUMBER} \
                         148908330969.dkr.ecr.ap-south-1.amazonaws.com/cloud-native-task-manager:${BUILD_NUMBER}
+
+                        echo "========================================"
+                        echo "Pushing Docker image..."
+                        echo "========================================"
 
                         docker push \
                         148908330969.dkr.ecr.ap-south-1.amazonaws.com/cloud-native-task-manager:${BUILD_NUMBER}
