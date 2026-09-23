@@ -71,16 +71,22 @@ pipeline {
                 sh '''
                     export KUBECIONFIG=/var/lib/jenkins/.kube/config
 
+                    echo "Checking Kubernetes Cluster..."
                     kubectl config current-context
                     kubectl get nodes
 
-
+                  
+                    echo "Deploying Image..."
                     kubectl set image deployment/flask \
                     flask=148908330969.dkr.ecr.ap-south-1.amazonaws.com/cloud-native-task-manager:${BUILD_NUMBER}
 
+                    echo "Waiting for rollout..."
                     kubectl rollout status deployment/flask --timeout=120s
                          
+                    echo "Deployment status:"
                     kubectl get deployment flask
+            
+                    echo "Pod status:"
                     kubectl get pods -l app=flask
                 '''
             }
@@ -98,7 +104,9 @@ pipeline {
         }
 
         failure {
-            echo 'Cloud-Native Task Manager CI pipeline failed!'
+            echo "Kubernetes deployment failed."
+            kubectl get pods -l app=flask || true
+            kubectl describ deployment flask || true
         }
     }
 }
