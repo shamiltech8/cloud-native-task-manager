@@ -78,7 +78,10 @@ pipeline {
                     kubectl set image deployment/flask \
                     flask=148908330969.dkr.ecr.ap-south-1.amazonaws.com/cloud-native-task-manager:${BUILD_NUMBER}
 
-                    kubectl rollout status deployment/flask
+                    kubectl rollout status deployment/flask --timeout=120s
+                         
+                    kubectl get deployment flask
+                    kubectl get pods -l app=flask
                 '''
             }
         }
