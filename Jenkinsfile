@@ -79,6 +79,7 @@ pipeline {
     }
 
     post {
+
         always {
             sh 'docker compose -f docker-compose.ci.yml -p cloud-task-manager-ci down -v || true'
         }
@@ -91,4 +92,5 @@ pipeline {
             echo 'Cloud-Native Task Manager CI pipeline failed!'
         }
     }
-}}
+}
+
