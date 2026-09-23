@@ -69,6 +69,12 @@ pipeline {
         stage('Deploy to Kubernetes') {
             steps {
                 sh '''
+                    export KUBECIONFIG=/var/lib/jenkins/.kube/config
+
+                    kubectl config current-context
+                    kubectl get nodes
+
+
                     kubectl set image deployment/flask \
                     flask=148908330969.dkr.ecr.ap-south-1.amazonaws.com/cloud-native-task-manager:${BUILD_NUMBER}
 
