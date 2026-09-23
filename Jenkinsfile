@@ -32,7 +32,10 @@ pipeline {
 
         stage('Test') {
             steps {
-                sh 'DATABASE_URL=postgresql://task_user:password@localhost:5433/task_manager .venv/bin/pytest -v'
+                sh '''
+                    DATABASE_URL=postgresql://task_user:password@localhost:5433/task_manager \
+                    .venv/bin/pytest -v
+                '''
             }
         }
 
@@ -69,34 +72,45 @@ pipeline {
         stage('Deploy to Kubernetes') {
             steps {
                 sh '''
-                    export KUBECIONFIG=/var/lib/jenkins/.kube/config
+                    export KUBECONFIG=/var/lib/jenkins/.kube/config
 
-                    echo "Checking Kubernetes Cluster..."
+                    echo "Checking Kubernetes cluster..."
                     kubectl config current-context
                     kubectl get nodes
 
-                  
-                    echo "Deploying Image..."
+                    echo "Deploying image..."
                     kubectl set image deployment/flask \
                     flask=148908330969.dkr.ecr.ap-south-1.amazonaws.com/cloud-native-task-manager:${BUILD_NUMBER}
 
                     echo "Waiting for rollout..."
                     kubectl rollout status deployment/flask --timeout=120s
-                         
+
                     echo "Deployment status:"
                     kubectl get deployment flask
-            
+
                     echo "Pod status:"
                     kubectl get pods -l app=flask
                 '''
+            }
+
+            post {
+                failure {
+                    sh '''
+                        echo "Kubernetes deployment failed."
+                        kubectl get pods -l app=flask || true
+                        kubectl describe deployment flask || true
+                    '''
+                }
             }
         }
     }
 
     post {
-
         always {
-            sh 'docker compose -f docker-compose.ci.yml -p cloud-task-manager-ci down -v || true'
+            sh '''
+                docker compose -f docker-compose.ci.yml \
+                -p cloud-task-manager-ci down -v || true
+            '''
         }
 
         success {
@@ -104,9 +118,7 @@ pipeline {
         }
 
         failure {
-            echo "Kubernetes deployment failed."
-            kubectl get pods -l app=flask || true
-            kubectl describ deployment flask || true
+            echo 'Cloud-Native Task Manager CI pipeline failed!'
         }
     }
 }
