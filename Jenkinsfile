@@ -65,8 +65,6 @@ pipeline {
                 }
             }
         }
-    }
-        
 
         stage('Deploy to Kubernetes') {
             steps {
@@ -78,8 +76,7 @@ pipeline {
                 '''
             }
         }
-
-
+    }
 
     post {
         always {
@@ -94,4 +91,4 @@ pipeline {
             echo 'Cloud-Native Task Manager CI pipeline failed!'
         }
     }
-}
+}}
