@@ -71,9 +71,9 @@ pipeline {
                         docker push \
                         148908330969.dkr.ecr.ap-south-1.amazonaws.com/cloud-native-task-manager:21
                     '''
-                 }
-          }
-}
+               }      
+          }    
+     }       
 
         stage('Deploy to Kubernetes') {
             steps {
