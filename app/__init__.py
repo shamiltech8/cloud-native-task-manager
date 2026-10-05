@@ -18,4 +18,8 @@ def create_app():
     from app.routes import main
     app.register_blueprint(main)
 
+    # Register Prometheus metrics
+    from app.metrics import register_metrics
+    register_metrics(app)
+
     return app
