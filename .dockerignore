@@ -5,3 +5,6 @@ __pycache__/
 .gitignore
 .env
 logs/
+
+# Kubernetes Secret manifest containing credentials
+k8s/postgres-secret.yaml

@@ -1,6 +1,5 @@
 apiVersion: apps/v1
 kind: Deployment
-
 metadata:
   name: flask
 
@@ -17,19 +16,46 @@ spec:
         app: flask
 
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
+
       imagePullSecrets:
-         - name: ecr-secret
+        - name: ecr-secret
 
       containers:
         - name: flask
-          image: 148908330969.dkr.ecr.ap-south-1.amazonaws.com/cloud-native-task-manager:13
+          image: 148908330969.dkr.ecr.ap-south-1.amazonaws.com/cloud-native-task-manager:34
+
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
 
           ports:
             - containerPort: 5000
 
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+
           env:
-            - name: DATABASE_URL
-              value: postgresql://task_user:password@postgres:5432/task_manager
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secret
+                  key: POSTGRES_USER
+
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secret
+                  key: POSTGRES_PASSWORD
 
             - name: DATABASE_HOST
               valueFrom:
@@ -48,3 +74,13 @@ spec:
                 configMapKeyRef:
                   name: flask-config
                   key: DATABASE_NAME
+
+            - name: SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: flask-secret
+                  key: SECRET_KEY
+
+      volumes:
+        - name: tmp
+          emptyDir: {}

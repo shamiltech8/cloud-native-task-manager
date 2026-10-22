@@ -5,9 +5,9 @@ services:
     restart: always
 
     environment:
-      POSTGRES_USER: task_user
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: task_manager
+      POSTGRES_USER: ${DB_USER:?Set DB_USER in .env}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in .env}
+      POSTGRES_DB: ${DB_NAME:-task_manager}
 
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U task_user -d task_manager"]
@@ -38,7 +38,7 @@ services:
       - "5000"
 
     environment:
-      DATABASE_URL: postgresql://task_user:password@postgres:5432/task_manager
+      DATABASE_URL: postgresql://${DB_USER:?Set DB_USER in .env}:${DB_PASSWORD:?Set DB_PASSWORD in .env}@postgres:5432/${DB_NAME:-task_manager}
 
     networks:
       - app-network
@@ -56,7 +56,7 @@ services:
       - "5000"
 
     environment:
-      DATABASE_URL: postgresql://task_user:password@postgres:5432/task_manager
+     DATABASE_URL: postgresql://${DB_USER:?Set DB_USER in .env}:${DB_PASSWORD:?Set DB_PASSWORD in .env}@postgres:5432/${DB_NAME:-task_manager}
 
     networks:
       - app-network
@@ -74,7 +74,7 @@ services:
       - "5000"
 
     environment:
-      DATABASE_URL: postgresql://task_user:password@postgres:5432/task_manager
+      DATABASE_URL: postgresql://${DB_USER:?Set DB_USER in .env}:${DB_PASSWORD:?Set DB_PASSWORD in .env}@postgres:5432/${DB_NAME:-task_manager}
 
     networks:
       - app-network

@@ -14,3 +14,9 @@ venv/
 
 # macOS
 .DS_Store
+
+# Kubernetes Secret manifests containing real credentials
+k8s/postgres-secret.yaml
+
+# Temporary backup created during security configuration
+config.py.lesson5-backup
