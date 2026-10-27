@@ -16,6 +16,9 @@ spec:
         app: flask
 
     spec:
+      serviceAccountName: flask-sa
+      automountServiceAccountToken: false
+
       securityContext:
         runAsNonRoot: true
         runAsUser: 10001
