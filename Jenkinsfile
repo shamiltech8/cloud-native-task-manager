@@ -1,55 +1,95 @@
 pipeline {
     agent any
 
-    stages {
+    options {
+        timestamps()
+        disableConcurrentBuilds()
+    }
 
+    environment {
+        AWS_REGION = 'ap-south-1'
+        ECR_REGISTRY = '148908330969.dkr.ecr.ap-south-1.amazonaws.com'
+        ECR_REPOSITORY = 'cloud-native-task-manager'
+        CI_COMPOSE_PROJECT = "cloud-task-manager-ci-${BUILD_NUMBER}"
+        KUBECONFIG = '/var/lib/jenkins/.kube/config'
+    }
+
+    stages {
         stage('Checkout') {
             steps {
                 checkout scm
+
+                script {
+                    env.IMAGE_TAG = "build-${env.BUILD_NUMBER}-${env.GIT_COMMIT.take(7)}"
+                    echo "Docker image tag: ${env.IMAGE_TAG}"
+                }
             }
         }
 
         stage('Project Check') {
             steps {
-                sh 'pwd'
-                sh 'ls -la'
+                sh '''
+                    set -eu
+                    echo "Checking project files..."
+                    pwd
+                    ls -la
+                    test -f Dockerfile
+                    test -f requirements.txt
+                    test -f docker-compose.ci.yml
+                '''
             }
         }
 
         stage('Install Dependencies') {
             steps {
-                sh 'python3 -m venv .venv'
-                sh '.venv/bin/python -m pip install -r requirements.txt'
+                sh '''
+                    set -eu
+                    python3 -m venv .venv
+                    .venv/bin/python -m pip install --upgrade pip
+                    .venv/bin/python -m pip install -r requirements.txt
+                    .venv/bin/python -m pip install pytest
+                '''
             }
         }
 
         stage('Start CI Database') {
             steps {
                 sh '''
-                    docker compose \
-                    -f docker-compose.ci.yml \
-                    -p cloud-task-manager-ci \
-                    up -d
+                    set -eu
 
-                    sleep 10
+                    docker compose \
+                        -f docker-compose.ci.yml \
+                        -p "$CI_COMPOSE_PROJECT" \
+                        up -d --wait --wait-timeout 60
+
+                    docker compose \
+                        -f docker-compose.ci.yml \
+                        -p "$CI_COMPOSE_PROJECT" \
+                        ps
                 '''
             }
         }
 
         stage('Test') {
             steps {
-                sh '''
-                    DATABASE_URL=postgresql://task_user:password@localhost:5433/task_manager \
-                    .venv/bin/pytest -v
-                '''
+                withEnv([
+                    'SECRET_KEY=jenkins-ci-test-only-secret',
+                    'DATABASE_URL=postgresql://task_user:password@localhost:5433/task_manager'
+                ]) {
+                    sh '''
+                        set -eu
+                        .venv/bin/python -m pytest -v
+                    '''
+                }
             }
         }
 
         stage('Build Docker Image') {
             steps {
                 sh '''
+                    set -eu
                     docker build \
-                    -t cloud-task-manager:${BUILD_NUMBER} .
+                        -t "$ECR_REPOSITORY:$IMAGE_TAG" .
                 '''
             }
         }
@@ -63,95 +103,124 @@ pipeline {
                         passwordVariable: 'AWS_SECRET_ACCESS_KEY'
                     )
                 ]) {
+                    sh '''
+                        set -eu
+                        export AWS_DEFAULT_REGION="$AWS_REGION"
 
-                    retry(3) {
+                        echo "Logging in to Amazon ECR..."
 
-                        sh '''
-                            echo "Logging in to Amazon ECR..."
-
-                            aws ecr get-login-password \
-                            --region ap-south-1 | \
-                            docker login \
+                        aws ecr get-login-password \
+                            --region "$AWS_REGION" |
+                        docker login \
                             --username AWS \
-                            --password-stdin \
-                            148908330969.dkr.ecr.ap-south-1.amazonaws.com
+                            --password-stdin "$ECR_REGISTRY"
 
-                            echo "Tagging Docker image..."
+                        echo "Tagging Docker image..."
 
-                            docker tag \
-                            cloud-task-manager:${BUILD_NUMBER} \
-                            148908330969.dkr.ecr.ap-south-1.amazonaws.com/cloud-native-task-manager:${BUILD_NUMBER}
+                        docker tag \
+                            "$ECR_REPOSITORY:$IMAGE_TAG" \
+                            "$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
 
-                            echo "Pushing Docker image to ECR..."
+                        echo "Pushing Docker image to ECR..."
 
-                            docker push \
-                            148908330969.dkr.ecr.ap-south-1.amazonaws.com/cloud-native-task-manager:${BUILD_NUMBER}
+                        docker push \
+                            "$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
 
-                            echo "ECR push completed successfully."
-                        '''
-                    }
+                        echo "ECR push completed successfully."
+                    '''
                 }
             }
         }
 
         stage('Deploy to Kubernetes') {
             steps {
-                withCredentials([
-                    usernamePassword(
-                        credentialsId: 'aws-ecr',
-                        usernameVariable: 'AWS_ACCESS_KEY_ID',
-                        passwordVariable: 'AWS_SECRET_ACCESS_KEY'
-                    )
-                ]) {
+                script {
+                    def previousImage = ''
 
-                    sh '''
-                        export KUBECONFIG=/var/lib/jenkins/.kube/config
+                    withCredentials([
+                        usernamePassword(
+                            credentialsId: 'aws-ecr',
+                            usernameVariable: 'AWS_ACCESS_KEY_ID',
+                            passwordVariable: 'AWS_SECRET_ACCESS_KEY'
+                        )
+                    ]) {
+                        try {
+                            sh '''
+                                set -eu
+                                export AWS_DEFAULT_REGION="$AWS_REGION"
 
-                        echo "Checking Kubernetes cluster..."
+                                echo "Checking Kubernetes cluster..."
+                                kubectl config current-context
+                                kubectl get nodes
 
-                        kubectl config current-context
-                        kubectl get nodes
+                                echo "Refreshing ECR pull secret..."
+                                kubectl create secret docker-registry ecr-secret \
+                                    --docker-server="$ECR_REGISTRY" \
+                                    --docker-username=AWS \
+                                    --docker-password="$(aws ecr get-login-password --region "$AWS_REGION")" \
+                                    --dry-run=client -o yaml |
+                                kubectl apply -f -
+                            '''
 
-                        echo "Refreshing ECR pull secret..."
+                            previousImage = sh(
+                                script: '''
+                                    kubectl get deployment flask \
+                                        -o jsonpath='{.spec.template.spec.containers[?(@.name=="flask")].image}'
+                                ''',
+                                returnStdout: true
+                            ).trim()
 
-                        kubectl create secret docker-registry ecr-secret \
-                            --docker-server=148908330969.dkr.ecr.ap-south-1.amazonaws.com \
-                            --docker-username=AWS \
-                            --docker-password="$(aws ecr get-login-password --region ap-south-1)" \
-                            --dry-run=client \
-                            -o yaml | kubectl apply -f -
+                            if (!previousImage) {
+                                error('Could not determine the previous Flask image. Deployment stopped.')
+                            }
 
-                        echo "ECR pull secret refreshed successfully."
+                            echo "Previous Flask image recorded."
 
-                        echo "Deploying image..."
+                            sh '''
+                                set -eu
 
-                        kubectl set image deployment/flask \
-                            flask=148908330969.dkr.ecr.ap-south-1.amazonaws.com/cloud-native-task-manager:${BUILD_NUMBER}
+                                echo "Deploying the new image..."
 
-                        echo "Waiting for rollout..."
+                                kubectl set image deployment/flask \
+                                    flask="$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
 
-                        kubectl rollout status \
-                            deployment/flask \
-                            --timeout=120s
+                                kubectl rollout status \
+                                    deployment/flask \
+                                    --timeout=120s
 
-                        echo "Deployment status:"
+                                echo "Deployment status:"
+                                kubectl get deployment flask
 
-                        kubectl get deployment flask
+                                echo "Pod status:"
+                                kubectl get pods -l app=flask
+                            '''
+                        } catch (err) {
+                            echo "Deployment failed: ${err}"
 
-                        echo "Pod status:"
+                            if (previousImage) {
+                                echo "Attempting to restore the previous Flask image..."
 
-                        kubectl get pods -l app=flask
-                    '''
+                                withEnv(["PREVIOUS_IMAGE=${previousImage}"]) {
+                                    sh '''
+                                        set -eu
+                                        kubectl set image deployment/flask \
+                                            flask="$PREVIOUS_IMAGE"
+                                        kubectl rollout status deployment/flask \
+                                            --timeout=120s
+                                    '''
+                                }
+                            }
+
+                            throw err
+                        }
+                    }
                 }
             }
 
             post {
                 failure {
                     sh '''
-                        echo "Kubernetes deployment failed."
-
                         kubectl get pods -l app=flask || true
-
                         kubectl describe deployment flask || true
                     '''
                 }
@@ -160,13 +229,12 @@ pipeline {
     }
 
     post {
-
         always {
             sh '''
                 docker compose \
-                -f docker-compose.ci.yml \
-                -p cloud-task-manager-ci \
-                down -v || true
+                    -f docker-compose.ci.yml \
+                    -p "$CI_COMPOSE_PROJECT" \
+                    down -v || true
             '''
         }
 
@@ -179,4 +247,3 @@ pipeline {
         }
     }
 }
-
