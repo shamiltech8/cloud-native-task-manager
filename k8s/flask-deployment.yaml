@@ -31,7 +31,7 @@ spec:
 
       containers:
         - name: flask
-          image: 148908330969.dkr.ecr.ap-south-1.amazonaws.com/cloud-native-task-manager:34
+          image: 148908330969.dkr.ecr.ap-south-1.amazonaws.com/cloud-native-task-manager:module15
 
           securityContext:
             allowPrivilegeEscalation: false

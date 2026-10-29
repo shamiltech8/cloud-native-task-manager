@@ -120,7 +120,7 @@ def edit_task(task_id):
         "edit_task.html",
         task=task
     )
-@main.route("/delete-task/<int:task_id>")
+@main.route("/delete-task/<int:task_id>", methods=["POST"])
 def delete_task(task_id):
 
     if "username" not in session:
@@ -136,7 +136,7 @@ def delete_task(task_id):
     ).first()
 
     if not task:
-        return "Task not found!"
+        return "Task not found!", 404
 
     db.session.delete(task)
     db.session.commit()

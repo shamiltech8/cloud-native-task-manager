@@ -1,5 +1,5 @@
 from prometheus_client import Counter, Histogram, generate_latest
-from flask import request
+from flask import request, g
 import time
 
 
@@ -20,11 +20,16 @@ def register_metrics(app):
 
     @app.before_request
     def start_timer():
-        request.start_time = time.time()
+        g.start_time = time.perf_counter()
 
     @app.after_request
     def record_metrics(response):
-        duration = time.time() - request.start_time
+        start_time = getattr(g, "start_time", None)
+
+        if start_time is None:
+            duration = 0.0
+        else:
+            duration = time.perf_counter() - start_time
 
         endpoint = request.endpoint or "unknown"
 
