@@ -20,3 +20,4 @@ k8s/postgres-secret.yaml
 
 # Temporary backup created during security configuration
 config.py.lesson5-backup
+.env
