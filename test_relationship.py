@@ -32,7 +32,12 @@ def test_user_task_relationship():
         db.session.add_all([task1, task2])
         db.session.commit()
 
-        assert len(user.tasks) == 2
+        fetched_user = User.query.filter_by(username="relationship_user").first()
+
+        assert fetched_user is not None
+        assert len(fetched_user.tasks) == 2
+        assert task1 in fetched_user.tasks
+        assert task2 in fetched_user.tasks
         assert task1.user == user
         assert task2.user == user
 

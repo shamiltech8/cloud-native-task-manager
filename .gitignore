@@ -1,23 +1,26 @@
+# Environment variables
+.env
+
 # Python
 __pycache__/
 *.pyc
+.pytest_cache/
 
-# Virtual Environment
+# Virtual environments
+.venv/
 venv/
 
-# Environment Variables
-.env
+# Logs
+*.log
 
-# IDE Files
-.vscode/
+# IDE and OS files
 .idea/
-
-# macOS
+.vscode/
 .DS_Store
 
-# Kubernetes Secret manifests containing real credentials
+# Kubernetes secret manifest containing real credentials
 k8s/postgres-secret.yaml
 
-# Temporary backup created during security configuration
+# Temporary backups
 config.py.lesson5-backup
-.env
+Jenkinsfile.backup
