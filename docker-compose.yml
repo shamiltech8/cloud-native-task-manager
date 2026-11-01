@@ -38,6 +38,8 @@ services:
 
     expose:
       - "5000"
+    ports:
+      - "127.0.0.1:5001:5000"
 
     environment:
       DATABASE_URL: postgresql://${DB_USER:?Set DB_USER in .env}:${DB_PASSWORD:?Set DB_PASSWORD in .env}@postgres:5432/${DB_NAME:-task_manager}
@@ -58,6 +60,8 @@ services:
 
     expose:
       - "5000"
+    ports:
+      - "127.0.0.1:5002:5000"
 
     environment:
      DATABASE_URL: postgresql://${DB_USER:?Set DB_USER in .env}:${DB_PASSWORD:?Set DB_PASSWORD in .env}@postgres:5432/${DB_NAME:-task_manager}
@@ -78,6 +82,8 @@ services:
 
     expose:
       - "5000"
+    ports:
+      - "127.0.0.1:5003:5000"
 
     environment:
       DATABASE_URL: postgresql://${DB_USER:?Set DB_USER in .env}:${DB_PASSWORD:?Set DB_PASSWORD in .env}@postgres:5432/${DB_NAME:-task_manager}

@@ -1,0 +1,61 @@
+groups:
+  - name: infrastructure-alerts
+    rules:
+
+      # Node Exporter is unavailable
+      - alert: NodeExporterDown
+        expr: up{job="node"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Node Exporter is down"
+          description: "Node Exporter target has been down for more than 1 minute."
+
+      # High CPU usage
+      - alert: HighCPUUsage
+        expr: 100 - (avg by (instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 80
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High CPU usage"
+          description: "CPU usage has been above 80% for more than 5 minutes."
+
+      # High memory usage
+      - alert: HighMemoryUsage
+        expr: 100 * (1 - node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes) > 80
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High memory usage"
+          description: "Memory usage has been above 80% for more than 5 minutes."
+
+      # Low disk space
+      - alert: LowDiskSpace
+        expr: 100 * (node_filesystem_avail_bytes{fstype!~"tmpfs|overlay|fuse.snapfuse"} / node_filesystem_size_bytes{fstype!~"tmpfs|overlay|fuse.snapfuse"}) < 20
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Low disk space"
+          description: "Available disk space is below 20%."
+
+      # Flask deployment replica mismatch
+      - alert: FlaskReplicaMismatch
+        expr: kube_deployment_status_replicas{namespace="default", deployment="flask"} != kube_deployment_status_replicas_ready{namespace="default", deployment="flask"}
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Flask replicas are not ready"
+          description: "The number of ready Flask replicas does not match the desired replica count."
+
+      - alert: FlaskInstanceDown
+        expr: up{job="flask"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Flask instance {{ $labels.instance }} is down"
