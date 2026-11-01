@@ -40,7 +40,7 @@ flowchart TD
     K --> APP[Flask + Gunicorn x3]
     APP --> DB[(PostgreSQL)]
 
-    APP --> MET[/metrics]
+    APP --> MET["/metrics endpoint"]
     NODE[Node Exporter] --> P[Prometheus]
     CAD[cAdvisor] --> P
     KSM[kube-state-metrics] --> P
